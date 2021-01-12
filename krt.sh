@@ -22,9 +22,11 @@ readonly KRTPROGNAME="$(basename $0)"
 readonly KRTVERSION='v1.0'
 
 usage() {
-	echo "usage: $KRTPROGNAME [width height]" >&2
+	echo "usage: $KRTPROGNAME [-s sqrt] [-n nearest] [width height]" >&2
 }
 
+sflag=newton
+nflag=fixed
 height=256
 width=256
 
@@ -36,6 +38,14 @@ _enumslow() {
 		printf "%d\n" "$i"
 		i=$(( i + 1 ))
 	done
+}
+
+. ./sqrt.sh
+
+_sqrt() {
+	nearest="$("$nflag"_nearest "$(( $1 / 1000 ))")"
+	s=$("$sflag" "$1" "$(( nearest * 1000 ))")
+	echo "$s"
 }
 
 init() {
@@ -90,8 +100,10 @@ EOF
 }
 
 if [ "${KRTPROGNAME%.sh}" = "krt" ] && [ "$*" != "as a library" ]; then
-	while getopts ":" opt; do
+	while getopts ":s:n:" opt; do
 		case $opt in
+			s) sflag="$OPTARG";;
+			n) nflag="$OPTARG";;
 			:) echo "$KRTPROGNAME: option requires an argument -- $OPTARG" >&2;
 			   usage; exit 1;;	# NOTREACHED
 			\?) echo "$KBFPROGNAME: unknown option -- $OPTARG" >&2;
@@ -112,6 +124,20 @@ if [ "${KRTPROGNAME%.sh}" = "krt" ] && [ "$*" != "as a library" ]; then
 		echo "$KRTPROGNAME: invalid trailing chars -- $@" >&2
 		usage
 		exit 1
+	fi
+
+	case "$sflag" in
+	newton|heron|bakhshali) :;;
+	*) echo "$KRTPROGNAME: invalid square root function name" >&2;;
+	esac
+
+	case "$nflag" in
+	fixed|dynamic) :;;
+	*) echo "$KRTPROGNAME: invalid nearest square root finding method" >&2;;
+	esac
+
+	if [ "$nflag" = fixed ] && ! [ -f perfect_squares.txt ]; then
+		echo "$KRTPROGNAME: please generate perfect_squares.txt"  >&2
 	fi
 
 	set -u

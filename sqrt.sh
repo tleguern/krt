@@ -30,8 +30,8 @@ dynamic_nearest() {
 }
 
 newton() {
-	local S="$(( $1 * 1000 ))"; shift
-	local x=$(( $1 * 1000 )); shift
+	local S="$1"; shift
+	local x="$1"; shift
 	if [ $# -ge 1 ]; then
 		local maxsteps="$1"
 	else
@@ -41,18 +41,19 @@ newton() {
 
 	while [ "$steps" -lt "$maxsteps" ]; do
 		local nextx=$(( x - (x * x / 1000 - S) * 1000 / (2 * x) ))
-		steps=$(( steps + 1 ))
 		if [ "$x" = "$nextx" ]; then
 			break
 		fi
 		x="$nextx"
+		#echo "$steps / $maxsteps" >&2
+		steps=$(( steps + 1 ))
 	done
 	printf "%d\n" "$x"
 }
 
 heron() {
-	local S="$(( $1 * 1000 ))"; shift
-	local x=$(( $1 * 1000 )); shift
+	local S="$1"; shift
+	local x="$1"; shift
 	if [ $# -ge 1 ]; then
 		local maxsteps="$1"
 	else
@@ -62,18 +63,19 @@ heron() {
 
 	while [ "$steps" -lt "$maxsteps" ]; do
 		local nextx=$(( (x + S * 1000 / x) / 2 ))
-		steps=$(( steps + 1 ))
 		if [ "$x" = "$nextx" ]; then
 			break
 		fi
 		x="$nextx"
+		#echo "$steps / $maxsteps" >&2
+		steps=$(( steps + 1 ))
 	done
 	printf "%d\n" "$x"
 }
 
 bakhshali() {
-	local S="$(( $1 * 1000 ))"; shift
-	local x=$(( $1 * 1000 )); shift
+	local S="$1"; shift
+	local x="$1"; shift
 
 	for steps in 1 2; do
 		local a=$(( (S - x * x / 1000) * 1000 / (2 * x) ))
@@ -84,8 +86,14 @@ bakhshali() {
 	printf "%d\n" "$x"
 }
 
-# Example from wikipedia:
+# Example from wikipedia: sqrt(125348)
 # nearest=$(fixed_nearest 125348)
-# heron 125348 $nearest
-# bakhshali 125348 $nearest
-# newton 125348 $nearest
+# heron $((125348 * 1000)) $(( nearest * 1000 ))
+# bakhshali $((125348 * 1000)) $(( nearest * 1000 ))
+# newton $((125348 * 1000)) $(( nearest * 1000 ))
+
+# Example: sqrt(5.160)
+# nearest=$(fixed_nearest $(( 5160 / 1000 )))
+# newton 5160 $(( nearest * 1000 ))
+# heron 5160 $(( nearest * 1000 ))
+# bakhshali 5160 $(( nearest * 1000 ))
