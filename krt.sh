@@ -18,17 +18,50 @@
 set -e
 set -f
 
-readonly KRTPROGNAME="$(basename $0)"
-readonly KRTVERSION='v1.0'
+readonly PROGNAME="$(basename $0)"
+readonly VERSION='v1.0'
 
 usage() {
-	echo "usage: $KRTPROGNAME [-s sqrt] [-n nearest] [width height]" >&2
+	echo "usage: $PROGNAME [-s sqrt] [-n nearest]" >&2
 }
 
 sflag=newton
 nflag=fixed
-height=256
-width=256
+
+while getopts ":s:n:" opt; do
+	case $opt in
+		s) sflag="$OPTARG";;
+		n) nflag="$OPTARG";;
+		:) echo "$PROGNAME: option requires an argument -- $OPTARG" >&2;
+		   usage; exit 1;;	# NOTREACHED
+		\?) echo "$KBFPROGNAME: unknown option -- $OPTARG" >&2;
+		   usage; exit 1;;	# NOTREACHED
+		*) usage; exit 1;;	# NOTREACHED
+	esac
+done
+shift $(( $OPTIND -1 ))
+
+if [ $# -ge 1 ]; then
+	echo "$PROGNAME: invalid trailing chars -- $@" >&2
+	usage
+	exit 1
+fi
+
+case "$sflag" in
+newton|heron|bakhshali) :;;
+*) echo "$PROGNAME: invalid square root function name" >&2;;
+esac
+
+case "$nflag" in
+fixed|dynamic) :;;
+*) echo "$PROGNAME: invalid nearest square root finding method" >&2;;
+esac
+
+if [ "$nflag" = fixed ] && ! [ -f perfect_squares.txt ]; then
+	echo "$PROGNAME: please generate perfect_squares.txt"  >&2
+fi
+
+set -u
 
 # Regular enum but adapted to fixed point representation
 _enumjot() { jot - $1 $2 1000; }
@@ -73,97 +106,49 @@ progressreport() {
 	printf "> %s: %d%%\r" "$s" "$progress" >&2
 }
 
-krt() {
-	# Image
-	aspect_ratio=$(( 16000 * 1000 / 9000 ))
-	image_width=$(( 400 * 1000 ))
-	image_height=$(( image_width * 1000 / aspect_ratio ))
+init
 
-	# Camera
-	viewport_height=2000
-	viewport_width=$(( aspect_ratio * viewport_height / 1000 ))
-	focal_length=1000
+# Image
+aspect_ratio=$(( 16000 * 1000 / 9000 ))
+image_width=$(( 400 * 1000 ))
+image_height=$(( image_width * 1000 / aspect_ratio ))
 
-	origin="0 0 0"
-	horizontal="$viewport_width 0 0"
-	vertical="0 $viewport_height 0"
-	tmp1=$(vec3_divf $horizontal 2000)
-	tmp2=$(vec3_divf $vertical 2000)
-	tmp3=$(vec3_sub $origin $tmp1)
-	tmp4=$(vec3_sub $tmp3 $tmp2)
-	lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
+# Camera
+viewport_height=2000
+viewport_width=$(( aspect_ratio * viewport_height / 1000 ))
+focal_length=1000
 
-	cat <<EOF
+origin="0 0 0"
+horizontal="$viewport_width 0 0"
+vertical="0 $viewport_height 0"
+tmp1=$(vec3_divf $horizontal 2000)
+tmp2=$(vec3_divf $vertical 2000)
+tmp3=$(vec3_sub $origin $tmp1)
+tmp4=$(vec3_sub $tmp3 $tmp2)
+lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
+
+cat <<EOF
 P3
 $((image_width / 1000)) $((image_height / 1000))
 255
 EOF
 
-	j=$(( image_height - 1000 ))
-	while [ "$j" -ge 0 ]; do
-		progressreport "$(( image_height - j ))" "$image_height" "Generating image"
-		v=$(( j * 1000 / (image_height - 1000) ))
-		for i in $($enum 0 $(( image_width - 1000 ))); do
-			u=$(( i * 1000 / (image_width - 1000) ))
-			tmp1="$(vec3_mulf $horizontal $u)"
-			tmp2="$(vec3_mulf $vertical $v)"
-			tmp3="$(vec3_add $lower_left_corner $tmp1)"
-			tmp4="$(vec3_sub $tmp2 $origin)"
-			direction="$(vec3_add $tmp3 $tmp4)"
-			color="$(ray_color "$origin" "$direction")"
-			# Readjust the value to the RGB scope
-			color="$(vec3_mulf $color 255990)"
-			color="$(vec3_trunc $color)"
-			printf "%d %d %d\n" $color
-		done
-		j=$(( j - 1000 ))
+j=$(( image_height - 1000 ))
+while [ "$j" -ge 0 ]; do
+	progressreport "$(( image_height - j ))" "$image_height" "Generating image"
+	v=$(( j * 1000 / (image_height - 1000) ))
+	for i in $($enum 0 $(( image_width - 1000 ))); do
+		u=$(( i * 1000 / (image_width - 1000) ))
+		tmp1="$(vec3_mulf $horizontal $u)"
+		tmp2="$(vec3_mulf $vertical $v)"
+		tmp3="$(vec3_add $lower_left_corner $tmp1)"
+		tmp4="$(vec3_sub $tmp2 $origin)"
+		direction="$(vec3_add $tmp3 $tmp4)"
+		color="$(ray_color "$origin" "$direction")"
+		# Readjust the value to the RGB scope
+		color="$(vec3_mulf $color 255990)"
+		color="$(vec3_trunc $color)"
+		printf "%d %d %d\n" $color
 	done
-	echo ""
-}
-
-if [ "${KRTPROGNAME%.sh}" = "krt" ] && [ "$*" != "as a library" ]; then
-	while getopts ":s:n:" opt; do
-		case $opt in
-			s) sflag="$OPTARG";;
-			n) nflag="$OPTARG";;
-			:) echo "$KRTPROGNAME: option requires an argument -- $OPTARG" >&2;
-			   usage; exit 1;;	# NOTREACHED
-			\?) echo "$KBFPROGNAME: unknown option -- $OPTARG" >&2;
-			   usage; exit 1;;	# NOTREACHED
-			*) usage; exit 1;;	# NOTREACHED
-		esac
-	done
-	shift $(( $OPTIND -1 ))
-
-	if [ -n "$1" ] && [ -n "$2" ]; then
-		width="$1"
-		shift
-		height="$1"
-		shift
-	fi
-
-	if [ $# -ge 1 ]; then
-		echo "$KRTPROGNAME: invalid trailing chars -- $@" >&2
-		usage
-		exit 1
-	fi
-
-	case "$sflag" in
-	newton|heron|bakhshali) :;;
-	*) echo "$KRTPROGNAME: invalid square root function name" >&2;;
-	esac
-
-	case "$nflag" in
-	fixed|dynamic) :;;
-	*) echo "$KRTPROGNAME: invalid nearest square root finding method" >&2;;
-	esac
-
-	if [ "$nflag" = fixed ] && ! [ -f perfect_squares.txt ]; then
-		echo "$KRTPROGNAME: please generate perfect_squares.txt"  >&2
-	fi
-
-	set -u
-
-	init
-	krt
-fi
+	j=$(( j - 1000 ))
+done
