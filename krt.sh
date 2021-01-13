@@ -30,17 +30,20 @@ nflag=fixed
 height=256
 width=256
 
-_enumjot() { jot - $1 $2 1; }
-_enumseq() { seq $1 1 $(( $2 - 1 )); }
+# Regular enum but adapted to fixed point representation
+_enumjot() { jot - $1 $2 1000; }
+_enumseq() { seq $1 1000 $2; }
 _enumslow() {
 	i="$1"
 	while [ "$i" -le "$2" ]; do
 		printf "%d\n" "$i"
-		i=$(( i + 1 ))
+		i=$(( i + 1000 ))
 	done
 }
 
 . ./sqrt.sh
+. ./vec.sh
+. ./ray.sh
 
 _sqrt() {
 	nearest="$("$nflag"_nearest "$(( $1 / 1000 ))")"
@@ -58,43 +61,62 @@ init() {
 	fi
 }
 
-loadslider() {
+progressreport() {
 	local p="$1"; shift
-	local max="$1"
-	local lenght=50
+	local max="$1"; shift
+	local s="$1"; shift
 
 	if [ $p -gt $max ]; then
 		return
 	fi
-	local progress=$(( p * lenght / max ))
-	local remain=$(( lenght - progress ))
-	if [ $progress -eq 0 ]; then
-		remain=$(( remain- 1 ))
-	fi
-	local position="$(printf %"$progress"s '=')"
-	local empty="$(printf %"$remain"s ' ')"
-	if [ "$remain" -eq 0 ]; then
-		empty=''
-	fi
-	printf '|%s%s>\r' "$position" "$empty" >&2
+	local progress=$(( p * 100 / max ))
+	printf "> %s: %d%%\r" "$s" "$progress" >&2
 }
 
 krt() {
+	# Image
+	aspect_ratio=$(( 16000 * 1000 / 9000 ))
+	image_width=$(( 400 * 1000 ))
+	image_height=$(( image_width * 1000 / aspect_ratio ))
+
+	# Camera
+	viewport_height=2000
+	viewport_width=$(( aspect_ratio * viewport_height / 1000 ))
+	focal_length=1000
+
+	origin="0 0 0"
+	horizontal="$viewport_width 0 0"
+	vertical="0 $viewport_height 0"
+	tmp1=$(vec3_divf $horizontal 2000)
+	tmp2=$(vec3_divf $vertical 2000)
+	tmp3=$(vec3_sub $origin $tmp1)
+	tmp4=$(vec3_sub $tmp3 $tmp2)
+	lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
+
 	cat <<EOF
 P3
-$width $height
+$((image_width / 1000)) $((image_height / 1000))
 255
 EOF
-	j=$(( height - 1 ))
+
+	j=$(( image_height - 1000 ))
 	while [ "$j" -ge 0 ]; do
-		loadslider "$(( height - j ))" "$height"
-		for i in $($enum 0 $(( width - 1 ))); do
-			r=$i
-			g=$j
-			b=63
-			printf "%d %d %d\n" $r $g $b
+		progressreport "$(( image_height - j ))" "$image_height" "Generating image"
+		v=$(( j * 1000 / (image_height - 1000) ))
+		for i in $($enum 0 $(( image_width - 1000 ))); do
+			u=$(( i * 1000 / (image_width - 1000) ))
+			tmp1="$(vec3_mulf $horizontal $u)"
+			tmp2="$(vec3_mulf $vertical $v)"
+			tmp3="$(vec3_add $lower_left_corner $tmp1)"
+			tmp4="$(vec3_sub $tmp2 $origin)"
+			direction="$(vec3_add $tmp3 $tmp4)"
+			color="$(ray_color "$origin" "$direction")"
+			# Readjust the value to the RGB scope
+			color="$(vec3_mulf $color 255990)"
+			color="$(vec3_trunc $color)"
+			printf "%d %d %d\n" $color
 		done
-		j=$(( j - 1 ))
+		j=$(( j - 1000 ))
 	done
 	echo ""
 }
