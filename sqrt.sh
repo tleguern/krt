@@ -1,9 +1,13 @@
 fixed_nearest() {
+	local i="$1"; shift
+	if [ $# -eq 1 ]; then
+		local input="$1"; shift
+	else
+		local input=./perfect_squares.txt
+	fi
 	local x=1
-	local i="$1"
 
-	local input=./perfect_squares.txt
-	set $(< $input)
+	set $(< "$input")
 	while ! [ "$i" -le "$2" ]; do
 		x=$(( x + 1 ))
 		shift
