@@ -41,10 +41,11 @@ newton() {
 	else
 		local maxsteps=5
 	fi
+	local factor="${FACTOR:-1000}"
 	local steps=1
 
 	while [ "$steps" -lt "$maxsteps" ]; do
-		local nextx=$(( x - (x * x / 1000 - S) * 1000 / (2 * x) ))
+		local nextx=$(( x - (x * x / factor - S) * factor / (2 * x) ))
 		if [ "$x" = "$nextx" ]; then
 			break
 		fi
@@ -63,10 +64,11 @@ heron() {
 	else
 		local maxsteps=5
 	fi
+	local factor="${FACTOR:-1000}"
 	local steps=1
 
 	while [ "$steps" -lt "$maxsteps" ]; do
-		local nextx=$(( (x + S * 1000 / x) / 2 ))
+		local nextx=$(( (x + S * factor / x) / 2 ))
 		if [ "$x" = "$nextx" ]; then
 			break
 		fi
@@ -80,11 +82,12 @@ heron() {
 bakhshali() {
 	local S="$1"; shift
 	local x="$1"; shift
+	local factor="${FACTOR:-1000}"
 
 	for steps in 1 2; do
-		local a=$(( (S - x * x / 1000) * 1000 / (2 * x) ))
+		local a=$(( (S - x * x / factor) * factor / (2 * x) ))
 		local b=$(( x + a ))
-		local nextx=$(( b - (a * a / 1000) * 1000 / (2 * b) ))
+		local nextx=$(( b - (a * a / factor) * factor / (2 * b) ))
 		x="$nextx"
 	done
 	printf "%d\n" "$x"
