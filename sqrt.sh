@@ -93,6 +93,15 @@ bakhshali() {
 	printf "%d\n" "$x"
 }
 
+cheating_with_bc() {
+	local S="$1"; shift
+	local factor="${FACTOR:-1000}"
+	local scale="$(printf "%d" $factor | tr -d '[1-9]' | wc -c)"
+
+	local res="$(bc -l -e "scale=$scale; sqrt($S/$factor)*$factor" -e quit)"
+	echo "$res" | cut -d '.' -f 1
+}
+
 # Example from wikipedia: sqrt(125348)
 # nearest=$(fixed_nearest 125348)
 # heron $((125348 * 1000)) $(( nearest * 1000 ))
