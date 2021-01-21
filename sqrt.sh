@@ -7,7 +7,10 @@ fixed_nearest() {
 	fi
 	local x=1
 
-	set $(< "$input")
+	if ! [ -f "$input" ]; then
+		echo "sqrt: invalid input file" >&2
+	fi
+	set $(cat "$input")
 	while ! [ "$i" -le "$2" ]; do
 		x=$(( x + 1 ))
 		shift
