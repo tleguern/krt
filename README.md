@@ -32,14 +32,14 @@ Such a list can be generated beforehand using this helper script:
 $ perfect_squares.sh > perfect_squares.txt
 ```
 
-For now there are no scene, no spheres, no floors, no lights, just rays hitting a blue background.
-This is the same as section 4 of [Ray Tracing in One Weekend][raytracinginoneweekend].
+For now there are no scene, no floor, no lights, just a hanging red sphere on a blue background.
+This is the same as section 5 of [Ray Tracing in One Weekend][raytracinginoneweekend].
 
 Here it is:
 
-![Blue background](section4.png)
+![Blue background and red sphere](section5.png)
 
-It took my laptop 37 minutes to generate it.
+It took my laptop 47 minutes to generate it.
 
 ## Install
 
