@@ -104,8 +104,8 @@ vec3_unit_vector() {
 	local v1y="$1"; shift
 	local v1z="$1"; shift
 
-	local tmp1=$(vec3_squared $v1x $v1y $v1z)
-	local tmp2=$(vec3_sum $tmp1)
-	local tmp3=$(_sqrt $tmp2)
+	local tmp1="$(vec3_squared $v1x $v1y $v1z)"
+	local tmp2="$(vec3_sum $tmp1)"
+	local tmp3="$(_sqrt $tmp2)"
 	vec3_divf $v1x $v1y $v1z $tmp3
 }

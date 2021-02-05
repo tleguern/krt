@@ -45,9 +45,9 @@ ray_color() {
 		return
 	fi
 
-	local unit_direction=$(vec3_unit_vector $direction)
+	local unit_direction="$(vec3_unit_vector $direction)"
 	local udy="$(echo "$unit_direction" | cut -d' ' -f2)"
-	local t=$(( (udy + 1000) / 2 ))
+	local t="$(( (udy + 1000) / 2 ))"
 	local tmp1="$(vec3_mulf 1000 1000 1000 "$((1000 - t))" )"
 	local tmp2="$(vec3_mulf 500 700 1000 "$t")"
 	vec3_add $tmp1 $tmp2
