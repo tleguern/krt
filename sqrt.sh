@@ -9,6 +9,7 @@ fixed_nearest() {
 
 	if ! [ -f "$input" ]; then
 		echo "sqrt: invalid input file" >&2
+		exit 1
 	fi
 	set $(cat "$input")
 	while ! [ "$i" -le "$2" ]; do
