@@ -168,6 +168,20 @@ drawline() {
 	done
 }
 
+drawrectangle() {
+	local start="$1"; shift
+	local stop="$1"; shift
+	local file="$1"; shift
+	local func="$1"; shift
+
+	local y="$start"
+	while [ "$y" -ge "$stop" ]; do
+		progressreport "$(( (image_height - y) ))" "$image_height"
+		"$func" "$y" >> "$file"
+		y=$(( y - 1000 ))
+	done
+}
+
 init
 
 # Image
@@ -189,17 +203,18 @@ tmp3=$(vec3_sub $origin $tmp1)
 tmp4=$(vec3_sub $tmp3 $tmp2)
 lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
 
-cat > image.ppm <<EOF
+rm -f header.ppm tophalf.ppm bottomhalf.ppm
+cat > header.ppm <<EOF
 P3
 $((image_width / 1000)) $((image_height / 1000))
 255
 EOF
 
-y=$(( image_height - 1000 ))
-while [ "$y" -ge 0 ]; do
-	progressreport "$(( (image_height - y) ))" "$image_height"
-	drawline "$y" >> image.ppm
-	y=$(( y - 1000 ))
-done
+drawrectangle "$(( image_height - 1000 ))" "$(( image_height / 2 ))" tophalf.ppm drawredline &
+drawrectangle "$(( (image_height - 1000) / 2 ))" 0 bottomhalf.ppm drawgreenline &
 
+jobs
+wait
+
+cat header.ppm tophalf.ppm bottomhalf.ppm > image.ppm
 printf "\nFinish !\n"
