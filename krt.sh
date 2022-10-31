@@ -189,6 +189,9 @@ aspect_ratio=$(( 16000 * 1000 / 9000 ))
 image_width=$(( 400 * 1000 ))
 image_height=$(( image_width * 1000 / aspect_ratio ))
 
+# Clamp image_height
+image_height=$(( image_height - image_height % 1000 ))
+
 # Camera
 viewport_height=2000
 viewport_width=$(( aspect_ratio * viewport_height / 1000 ))
