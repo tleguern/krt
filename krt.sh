@@ -94,6 +94,17 @@ init() {
 	fi
 }
 
+writeheader() {
+	local width="$1"; shift
+	local height="$1"; shift
+
+	cat > header.ppm <<EOF
+	P3
+	$((width / 1000)) $((height / 1000))
+	255
+EOF
+}
+
 progressreport() {
 	local current="$1"; shift
 	local max="$1"; shift
@@ -206,12 +217,7 @@ tmp3=$(vec3_sub $origin $tmp1)
 tmp4=$(vec3_sub $tmp3 $tmp2)
 lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
 
-rm -f header.ppm tophalf.ppm bottomhalf.ppm
-cat > header.ppm <<EOF
-P3
-$((image_width / 1000)) $((image_height / 1000))
-255
-EOF
+writeheader "$image_width" "$image_height"
 
 drawrectangle "$(( image_height - 1000 ))" "$(( image_height / 2 ))" tophalf.ppm drawredline &
 drawrectangle "$(( (image_height - 1000) / 2 ))" 0 bottomhalf.ppm drawgreenline &
