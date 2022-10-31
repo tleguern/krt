@@ -95,15 +95,16 @@ init() {
 }
 
 progressreport() {
-	local p="$1"; shift
+	local current="$1"; shift
 	local max="$1"; shift
-	local s="$1"; shift
 
-	if [ $p -gt $max ]; then
+	if [ $current -gt $max ]; then
 		return
 	fi
-	local progress=$(( p * 100 / max ))
-	printf "> %s: %d%%\r" "$s" "$progress" >&2
+	current="$((current / 1000))"
+	max="$((max / 1000))"
+	local progress=$(( current * 100 / max ))
+	printf "> Generating image line %d (%d%%)\r" "$current" "$progress" >&2
 }
 
 drawline() {
@@ -159,3 +160,5 @@ while [ "$y" -ge 0 ]; do
 	drawline "$y" >> image.ppm
 	y=$(( y - 1000 ))
 done
+
+printf "\nFinish !\n"
