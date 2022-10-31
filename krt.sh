@@ -107,6 +107,47 @@ progressreport() {
 	printf "> Generating image line %d (%d%%)\r" "$current" "$progress" >&2
 }
 
+drawcoloredline() {
+	local y="$1"; shift
+	local color="$1"; shift
+
+	local x=
+	for x in $($enum 0 $(( image_width - 1000 ))); do
+		printf "%s\n" "$color"
+	done
+	y=$(( y - 1000 ))
+}
+
+drawredline() {
+	local line="$1"; shift
+
+	drawcoloredline "$line" "255 0 0"
+}
+
+drawgreenline() {
+	local line="$1"; shift
+
+	drawcoloredline "$line" "0 255 0"
+}
+
+drawblueline() {
+	local line="$1"; shift
+
+	drawcoloredline "$line" "0 0 255"
+}
+
+drawblackline() {
+	local line="$1"; shift
+
+	drawcoloredline "$line" "0 0 0"
+}
+
+drawwhiteline() {
+	local line="$1"; shift
+
+	drawcoloredline "$line" "255 255 255"
+}
+
 drawline() {
 	local y="$1"; shift
 	local x=
