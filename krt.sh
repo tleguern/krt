@@ -106,6 +106,26 @@ progressreport() {
 	printf "> %s: %d%%\r" "$s" "$progress" >&2
 }
 
+drawline() {
+	local y="$1"; shift
+	local x=
+
+	local v=$(( y * 1000 / (image_height - 1000) ))
+	for x in $($enum 0 $(( image_width - 1000 ))); do
+		local u=$(( x * 1000 / (image_width - 1000) ))
+		local tmp1="$(vec3_mulf $horizontal $u)"
+		local tmp2="$(vec3_mulf $vertical $v)"
+		local tmp3="$(vec3_add $lower_left_corner $tmp1)"
+		local tmp4="$(vec3_sub $tmp2 $origin)"
+		local direction="$(vec3_add $tmp3 $tmp4)"
+		local color="$(ray_color "$origin" "$direction")"
+		# Readjust the value to the RGB scope
+		color="$(vec3_mulf $color 255990)"
+		color="$(vec3_trunc $color)"
+		printf "%d %d %d\n" $color
+	done
+}
+
 init
 
 # Image
@@ -127,28 +147,15 @@ tmp3=$(vec3_sub $origin $tmp1)
 tmp4=$(vec3_sub $tmp3 $tmp2)
 lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
 
-cat <<EOF
+cat > image.ppm <<EOF
 P3
 $((image_width / 1000)) $((image_height / 1000))
 255
 EOF
 
-j=$(( image_height - 1000 ))
-while [ "$j" -ge 0 ]; do
-	progressreport "$(( image_height - j ))" "$image_height" "Generating image"
-	v=$(( j * 1000 / (image_height - 1000) ))
-	for i in $($enum 0 $(( image_width - 1000 ))); do
-		u=$(( i * 1000 / (image_width - 1000) ))
-		tmp1="$(vec3_mulf $horizontal $u)"
-		tmp2="$(vec3_mulf $vertical $v)"
-		tmp3="$(vec3_add $lower_left_corner $tmp1)"
-		tmp4="$(vec3_sub $tmp2 $origin)"
-		direction="$(vec3_add $tmp3 $tmp4)"
-		color="$(ray_color "$origin" "$direction")"
-		# Readjust the value to the RGB scope
-		color="$(vec3_mulf $color 255990)"
-		color="$(vec3_trunc $color)"
-		printf "%d %d %d\n" $color
-	done
-	j=$(( j - 1000 ))
+y=$(( image_height - 1000 ))
+while [ "$y" -ge 0 ]; do
+	progressreport "$(( (image_height - y) ))" "$image_height"
+	drawline "$y" >> image.ppm
+	y=$(( y - 1000 ))
 done
