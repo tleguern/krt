@@ -92,6 +92,7 @@ init() {
 	else
 		enum=_enumslow
 	fi
+	trap reset ERR KILL
 }
 
 writeheader() {
@@ -99,23 +100,23 @@ writeheader() {
 	local height="$1"; shift
 
 	cat > header.ppm <<EOF
-	P3
-	$((width / 1000)) $((height / 1000))
-	255
+P3
+$((width / 1000)) $((height / 1000))
+255
 EOF
 }
 
 progressreport() {
-	local current="$1"; shift
+	local jobn="$(( $1 - 1 ))"; shift
+	local lines="$1"; shift
 	local max="$1"; shift
 
-	if [ $current -gt $max ]; then
+	if [ $lines -gt $max ]; then
 		return
 	fi
-	current="$((current / 1000))"
-	max="$((max / 1000))"
-	local progress=$(( current * 100 / max ))
-	printf "> Generating image line %d (%d%%)\r" "$current" "$progress" >&2
+	lines="$((lines / 1000))"
+	local progress=$((lines * 100 / (max / 1000) ))
+	printf "$(tput cup $jobn 0)> job %d %d (%d%%)" "$jobn" "$lines" "$progress" >&2
 }
 
 drawcoloredline() {
@@ -180,17 +181,21 @@ drawline() {
 }
 
 drawrectangle() {
-	local start="$1"; shift
-	local stop="$1"; shift
-	local file="$1"; shift
-	local func="$1"; shift
+	local start_at="$1"; shift
+	local stop_at="$1"; shift
+	local jobn="$1"; shift
+	local func="${1:-drawline}"
 
-	local y="$start"
-	while [ "$y" -ge "$stop" ]; do
-		progressreport "$(( (image_height - y) ))" "$image_height"
-		"$func" "$y" >> "$file"
+	local y="$start_at"
+	while [ "$y" -ge "$stop_at" ]; do
+		progressreport "$jobn" $(( start_at - y )) $(( start_at - stop_at ))
+		"$func" "$y" >> "part$jobn.ppm"
 		y=$(( y - 1000 ))
 	done
+}
+
+reset() {
+	tput cnorm rc
 }
 
 init
@@ -219,11 +224,16 @@ lower_left_corner=$(vec3_sub $tmp4 0 0 $focal_length)
 
 writeheader "$image_width" "$image_height"
 
-drawrectangle "$(( image_height - 1000 ))" "$(( image_height / 2 ))" tophalf.ppm drawredline &
-drawrectangle "$(( (image_height - 1000) / 2 ))" 0 bottomhalf.ppm drawgreenline &
+# 19m30.71s real    10m19.75s user    43m24.53s system
+tput sc clear civis
+rm -f -- part1.ppm part2.ppm part3.ppm part4.ppm
+drawrectangle "$(( image_height - 1000 ))" "$(( image_height / 4 * 3 ))" 1 &
+drawrectangle "$(( (image_height - 1000) / 4 * 3 ))" "$(( image_height / 2 ))" 2 &
+drawrectangle "$(( (image_height - 1000) / 2 ))" "$(( image_height / 4 ))" 3 &
+drawrectangle "$(( (image_height - 1000) / 4 ))" 0 4 &
 
-jobs
 wait
+reset
 
-cat header.ppm tophalf.ppm bottomhalf.ppm > image.ppm
+cat header.ppm part1.ppm part2.ppm part3.ppm part4.ppm > image.ppm
 printf "\nFinish !\n"
