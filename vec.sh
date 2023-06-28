@@ -96,7 +96,7 @@ vec3_cross() {
 	local v2y="$1"; shift
 	local v2z="$1"
 
-	echo "$(( v1y * v2z - v1z * v2y )) $(( v1z * v2x - v1x * v2z)) $(( v1x * v2y - v1y * v2x) ))"
+	echo "$(( v1y * v2z - v1z * v2y )) $(( v1z * v2x - v1x * v2z)) $(( v1x * v2y - v1y * v2x ))"
 }
 
 vec3_unit_vector() {
